@@ -19,3 +19,7 @@ To use the new compiled binaries with AddressWatcher mode on a C program test.c 
 3. export ASAN_OPTIONS="log_path=/path/to/test.c/asan:halt_on_error=0:detect_leaks=1:address_watcher=1"
 4. /path/to/compiled/binaries/bin/gcc -fsanitize=address test.c
 5. Run the compiled binary twice to recieve AddressWatcher report in same directory.
+
+
+Demo youtube link:
+https://www.youtube.com/watch?v=cGuefW925X4
