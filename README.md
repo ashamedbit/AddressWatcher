@@ -17,7 +17,7 @@ To use the new compiled binaries with AddressWatcher mode on a C program test.c 
 1. Change directory to test program
 2. export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/compiled/binaries/lib64
 3. export ASAN_OPTIONS="log_path=/path/to/test.c/asan:halt_on_error=0:detect_leaks=1:address_watcher=1"
-4. /path/to/compiled/binaries/bin/gcc -fsanitize=address test.c
+4. /path/to/compiled/binaries/bin/gcc -fsanitize=address -ggdb test.c
 5. Run the compiled binary twice to recieve AddressWatcher report in same directory.
 
 The benchmarks can be found in benchmarks/ folder which is a collection of 50 memory leak bugs across openssl, tmux, openssh-portable, binutils and git.
@@ -26,3 +26,6 @@ The benchmarks can be found in benchmarks/ folder which is a collection of 50 me
 Demo youtube link to understand how to run the tool:
 https://www.youtube.com/watch?v=cGuefW925X4
 
+docker image:
+Compiled binary in goodgcc directory
+docker pull ashamedbit/addresswatcher:latest
