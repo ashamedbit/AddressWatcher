@@ -26,6 +26,10 @@ The benchmarks can be found in benchmarks/ folder which is a collection of 50 me
 Demo youtube link to understand how to run the tool:
 https://www.youtube.com/watch?v=cGuefW925X4
 
-**docker image (Compiled binary in goodgcc directory):**
+**Docker image:**
+1. docker pull ashamedbit/addresswatcher:latest
+2. Set these 2 environment variables within the docker
+export ASAN_OPTIONS="log_path=/AddressWatcher/benchmarks/asan:halt_on_error=0:detect_leaks=1:address_watcher=1"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/goodgcc/lib64"
+3. Use compiled binary in goodgcc directory
 
-docker pull ashamedbit/addresswatcher:latest
