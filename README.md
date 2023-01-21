@@ -26,6 +26,6 @@ The benchmarks can be found in benchmarks/ folder which is a collection of 50 me
 Demo youtube link to understand how to run the tool:
 https://www.youtube.com/watch?v=cGuefW925X4
 
-docker image:
-Compiled binary in goodgcc directory
+docker image (Compiled binary in goodgcc directory):
+
 docker pull ashamedbit/addresswatcher:latest
