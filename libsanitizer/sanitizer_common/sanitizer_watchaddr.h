@@ -17,9 +17,31 @@
 
 namespace __sanitizer {
 
+    struct ExecutionTrace{
+        int len;
+        BufferedStackTrace trace[100];
+    };
+
+    struct ExecutionProfile{
+        int len;
+        ExecutionTrace exec_profile[10];
+
+        void PrintLastUse()
+        {
+            for (int i=0; i< this->len; i++)
+            {
+                ExecutionTrace* exec_trace = &((this->exec_profile)[i]);
+                BufferedStackTrace* lastuse = &(exec_trace->trace[exec_trace->len - 1]);
+                lastuse->Print();
+            }
+        }
+    };
+
     //extern avl_array<u32,BufferedStackTrace*, std::uint32_t, 5000, true> avl;
-    extern avl_array<u32,BufferedStackTrace*, int, 5000, true> avl;
-    extern BufferedStackTrace bs[5000];
+    extern avl_array<u32, ExecutionTrace*, int, 5000, true> avl;
+    extern ExecutionTrace bs[5000];
+
+   
 
     bool StackDepotPutLastUse(u32 id, BufferedStackTrace* s);
     void StackDepotPrintLastUse(u32 id);

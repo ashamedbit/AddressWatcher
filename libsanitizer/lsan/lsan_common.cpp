@@ -24,7 +24,6 @@
 #include "sanitizer_common/sanitizer_suppressions.h"
 #include "sanitizer_common/sanitizer_thread_registry.h"
 #include "sanitizer_common/sanitizer_tls_get_addr.h"
-#include "sanitizer_common/sanitizer_watchaddr.h"
 #include "sanitizer_common/sanitizer_watchaddrfileio.h"
 
 

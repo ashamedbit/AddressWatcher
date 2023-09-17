@@ -10,7 +10,6 @@
 // run-time libraries.
 //===----------------------------------------------------------------------===//
 
-#include "sanitizer_watchaddr.h"
 #include "sanitizer_internal_defs.h"
 #include "sanitizer_stacktrace.h"
 #include "sanitizer_common/sanitizer_stackdepot.h"
@@ -28,27 +27,31 @@ namespace __sanitizer {
 
     // AVL tree mapping id to LastUse StackTrace
     //avl_array<u32,BufferedStackTrace*, std::uint32_t, 5000, true> avl;
-    avl_array<u32,BufferedStackTrace*, int, 5000, true> avl;
-    BufferedStackTrace bs[5000];
+    avl_array<u32, ExecutionTrace*, int, 5000, true> avl;
+    ExecutionTrace bs[5000];
 
     // Copy BufferedStackTrace from source to destination pointer
-    void CopyBufferedStackTrace(BufferedStackTrace* dest, BufferedStackTrace* source)
+    void CopyBufferedStackTrace(BufferedStackTrace* dest, BufferedStackTrace* source, int index)
     {
-        dest->size = source->size;
-        dest->tag = source->tag;
-        dest->top_frame_bp = source->top_frame_bp;
+        dest[index].size = source->size;
+        dest[index].tag = source->tag;
+        dest[index].top_frame_bp = source->top_frame_bp;
 
         for (int i=0;i<dest->size;i++)
-            dest->trace_buffer[i] = source->trace_buffer[i];
+            dest[index].trace_buffer[i] = source->trace_buffer[i];
 
         return;
     }
 
     bool StackDepotPutLastUse(u32 id, BufferedStackTrace* s)
     {
-        BufferedStackTrace* bsend = &(bs[avl.size()]);
+        ExecutionTrace* bsend = &(bs[avl.size()]);
+        // This is the length of execution stack trace
+        bsend->len = 1;
+        // This is the actual stack trace to be added to execution profile
+        //bsend->exec_profile = bsend;
 
-        auto it = avl.insertwithoutupdate(id,bsend);
+        auto it = avl.insertwithoutupdate(id, bsend);
 
         // AVL tree filled upto capacity
         if (it == avl.end())
@@ -57,12 +60,17 @@ namespace __sanitizer {
         // id already exists, update stacktrace
         if (*it != bsend)
         {
-            CopyBufferedStackTrace(*it,s);
+            ExecutionTrace* p = *it;
+            int len = p->len;
+            BufferedStackTrace* trace = p->trace;
+            if (len == kMaxWatchAddr) return false;
+            CopyBufferedStackTrace(trace, s, len);
+            p->len = p->len + 1;
             return true;
         }
 
         // id is new, update the stacktrace
-        CopyBufferedStackTrace(bsend,s);
+        CopyBufferedStackTrace(bsend->trace, s, 0);
         return true;
     }
 
@@ -72,7 +80,10 @@ namespace __sanitizer {
 
         if (it != avl.end())
         {
-            (*it)->Print();
+            ExecutionTrace* p = *it;
+            int len = p->len;
+            BufferedStackTrace* exec_profile = p->trace;
+            exec_profile[len - 1].Print();
         }
 
         return;
@@ -84,7 +95,10 @@ namespace __sanitizer {
 
         if (it != avl.end())
         {
-            return *it;
+            ExecutionTrace* p = *it;
+            int len = p->len;
+            BufferedStackTrace* trace = p->trace;
+            return &(trace[len - 1]);
         }
 
         return nullptr;
@@ -96,11 +110,11 @@ namespace __sanitizer {
 
         while (it != avl.end())
         {
-            BufferedStackTrace* lastusethisrun= *it;
+            ExecutionTrace* p = *it;
             u32 id = &it;
             StackTrace s = StackDepotGet(id);
             
-            UpdateWatchlist(&s,lastusethisrun);
+            UpdateWatchlist(&s, p);
 
             it++;
         }

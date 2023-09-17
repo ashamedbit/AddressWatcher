@@ -29,7 +29,6 @@
 #include "sanitizer_common/sanitizer_stackdepot.h"
 #include "sanitizer_common/sanitizer_quarantine.h"
 #include "sanitizer_common/sanitizer_watchaddrfileio.h"
-#include "sanitizer_common/sanitizer_watchaddr.h"
 #include "lsan/lsan_common.h"
 
 namespace __asan {

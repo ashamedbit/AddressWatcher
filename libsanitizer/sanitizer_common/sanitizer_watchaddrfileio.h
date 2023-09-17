@@ -12,6 +12,7 @@
 
 #include "sanitizer_common.h"
 #include "sanitizer_stacktrace.h"
+#include "sanitizer_watchaddr.h"
 
 namespace __sanitizer {
 
@@ -21,6 +22,6 @@ namespace __sanitizer {
     bool IsAddrToWatch(BufferedStackTrace* s);
     uptr CheckIfBinaryRecompiled(uptr time);
     void InitializeWatchlist();
-    void UpdateWatchlist(StackTrace* mallocstack, BufferedStackTrace* lastusethisrun);
+    void UpdateWatchlist(StackTrace* mallocstack, ExecutionTrace* lastusethisrun);
     void StoreNewLeak(StackTrace* mallocstack);
 }

@@ -65,11 +65,11 @@ def run_repo(repo):
 
     # os.system("rm asan*")
     
-    print("The elapsed time without ASAN is : " + str(withoutASAN))
-    print("The elapsed time with ASAN is : " + str(withASAN))
-    print("The elapsed time with AW is : " + str(withAW))
-    print("Percentage increase over base is: " + str((withAW-withoutASAN)/(withoutASAN)))
-    print("Percentage increase over ASAN is: " + str((withAW-withASAN)/(withASAN)))
+    # print("The elapsed time without ASAN is : " + str(withoutASAN))
+    # print("The elapsed time with ASAN is : " + str(withASAN))
+    # print("The elapsed time with AW is : " + str(withAW))
+    # print("Percentage increase over base is: " + str((withAW-withoutASAN)/(withoutASAN)))
+    # print("Percentage increase over ASAN is: " + str((withAW-withASAN)/(withASAN)))
 
 
 # run_repo("git")

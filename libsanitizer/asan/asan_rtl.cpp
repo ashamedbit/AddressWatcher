@@ -28,7 +28,6 @@
 #include "sanitizer_common/sanitizer_libc.h"
 #include "sanitizer_common/sanitizer_symbolizer.h"
 #include "sanitizer_common/sanitizer_watchaddrfileio.h"
-#include "sanitizer_common/sanitizer_watchaddr.h"
 #include "lsan/lsan_common.h"
 #include "ubsan/ubsan_init.h"
 #include "ubsan/ubsan_platform.h"

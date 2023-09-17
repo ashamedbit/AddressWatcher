@@ -13,12 +13,11 @@
 #include "sanitizer_common.h"
 #include "sanitizer_stacktrace.h"
 #include "sanitizer_watchaddrfileio.h"
-#include "sanitizer_watchaddr.h"
 
 
 namespace __sanitizer {
 
-    bool inline WriteUptr(uptr x)
+    bool WriteUptr(uptr x)
     {
         char c[sizeof(uptr)*2+2];
         c[sizeof(uptr)*2]='\n';
@@ -61,7 +60,7 @@ namespace __sanitizer {
     bool WriteWatchAddr(BufferedStackTrace* s)
     {
         // Can be used when there is no last use during a run
-        if (s == nullptr)
+        if (s == nullptr || s->size == 0)
         {
             WriteUptr(0);
             return true;
@@ -76,18 +75,61 @@ namespace __sanitizer {
         return true;
     }
 
+    bool WriteExecutionTrace(ExecutionTrace* p)
+    {
+        // Can be used when there is no last use during a run
+        if (p == nullptr || p-> trace == nullptr || p->len == 0)
+        {
+            WriteUptr(0);
+            return true;
+        }
+
+        int len = p->len;
+        BufferedStackTrace* trace = p->trace;
+
+        WriteUptr(uptr(len));
+        
+        for (int i=0; i < p->len; i++)
+        {
+            BufferedStackTrace* s = &(trace[i]);
+            WriteWatchAddr(s);
+        }
+        return true;
+    }
+
+    bool WriteExecutionProfile(ExecutionProfile* p)
+    {
+        if (p == nullptr || p->exec_profile == nullptr || p->len == 0)
+        {
+            WriteUptr(0);
+            return true;
+        }
+
+        int len = int(p->len);
+        ExecutionTrace* exec_profile = p->exec_profile;
+        
+
+        WriteUptr(len);
+        for (int j=0; j<len; j++)
+        {
+            ExecutionTrace* e = &(exec_profile[j]);
+            WriteExecutionTrace(e);
+        }
+    }
+
     class AddrWatch {
 
     public:
 
-        const static int maxwatch = 5000;
+        const static int maxwatch = 100;
+        const static int maxexecutionlen = 10;
         BufferedStackTrace watchstack[maxwatch];
-        BufferedStackTrace lastusestack[maxwatch];
+        ExecutionProfile lastusestack[maxwatch];
         BufferedStackTrace* sortedstack[maxwatch];
         bool foundthisrun[maxwatch] = {false};
         int bspos = 0;
 
-        BufferedStackTrace* GetLastUseStack(int pos) {
+        ExecutionProfile* GetExecutionProfile(int pos) {
             return &(lastusestack[pos]);
         }
 
@@ -120,7 +162,7 @@ namespace __sanitizer {
                 if (foundthisrun[i] == false)
                 {
                     WriteWatchAddr(&watchstack[i]);
-                    WriteWatchAddr(&lastusestack[i]);
+                    WriteExecutionProfile(&lastusestack[i]);
                 }
         }
 
@@ -132,6 +174,8 @@ namespace __sanitizer {
         uptr inline ReadUptr(char** c);
         void inline ReadStack(BufferedStackTrace* s, char** c);
         bool ReadWatchAddr();
+        void ReadExecutionTrace(ExecutionTrace* p, char** c);
+        void ReadExecutionProfile(ExecutionProfile* p, char** c);
         int IsStackPresent(BufferedStackTrace* s);
         int IsStackPresent(StackTrace* s);
     };
@@ -308,6 +352,30 @@ namespace __sanitizer {
         }
     }
 
+    void AddrWatch::ReadExecutionTrace(ExecutionTrace* p, char** c)
+    {
+        p->len = ReadUptr(c);
+        BufferedStackTrace* trace = p->trace;
+
+        for (int i=0; i < p->len; i++)
+        {
+            BufferedStackTrace* s = &(trace[i]);
+            ReadStack(s, c);
+        }
+    }
+
+    void AddrWatch::ReadExecutionProfile(ExecutionProfile* p, char** c)
+    {
+        p->len = ReadUptr(c);
+        ExecutionTrace* exec_profile = p->exec_profile;
+
+        for (int i=0; i < p->len; i++)
+        {
+            ExecutionTrace* s = &(exec_profile[i]);
+            ReadExecutionTrace(s, c);
+        }
+    }
+
     bool AddrWatch::ReadWatchAddr()
     {
         char* c;
@@ -340,8 +408,8 @@ namespace __sanitizer {
             BufferedStackTrace* s = this->InsertNewStack();
             ReadStack(s,&p);
 
-            BufferedStackTrace* ls = this->GetLastUseStack(scannedstacks);
-            ReadStack(ls,&p);
+            ExecutionProfile* ls = this->GetExecutionProfile(scannedstacks);
+            ReadExecutionProfile(ls,&p);
             scannedstacks++;
         }
         return true;
@@ -429,7 +497,66 @@ namespace __sanitizer {
         return x;
     }
 
-    void UpdateWatchlist(StackTrace* mallocstack, BufferedStackTrace* lastusethisrun)
+    bool IsSubsequence(ExecutionTrace* x, ExecutionProfile* y)
+    {
+        int seq_len = x->len;
+
+        for (int i=0; i< y->len; i++)
+        {
+            ExecutionTrace* e = &(y->exec_profile[i]);
+            if (e->len < seq_len)
+            {
+                continue;
+            }
+            int seq_index = 0;
+            int j = 0;
+            while (seq_index<seq_len && j<e->len)
+            {
+                BufferedStackTrace* b1 = &(e->trace[j]);
+                BufferedStackTrace* b2 = &(x->trace[seq_index]);
+                if (AddrWatch::EqualBufferedStackTrace(b1, b2) == true)
+                {
+                    j++;
+                    seq_index++;
+                }
+                else
+                {
+                    j++;
+                }
+            }
+            if (j == e->len && seq_index == seq_len)
+            {
+                // Is a subsequence
+                return true;
+            }
+        }
+        // Not a subsequence
+        return false;
+    }
+
+    ExecutionProfile* MergeProfile(ExecutionTrace* x, ExecutionProfile* y)
+    {
+        if (y == nullptr)
+            return nullptr;
+        if (x == nullptr || x->len == 0)
+            return y;
+        
+        if (IsSubsequence(x,y) == true)
+        {
+            return y;
+        }
+
+        int len = y->len;
+        ExecutionTrace* exec_profile = y->exec_profile;
+
+        ExecutionTrace* modify = &(exec_profile[len]);
+        y->len = y->len + 1;
+        internal_memcpy(modify->trace, x->trace, sizeof(modify->trace));
+        modify->len = x->len;
+        return y;
+    }
+
+    void UpdateWatchlist(StackTrace* mallocstack, ExecutionTrace* tracethisrun)
     {
         Printf("AddressWatcher tracking the followed leak:\n");
 
@@ -437,10 +564,9 @@ namespace __sanitizer {
         WriteWatchAddr(mallocstack);
         mallocstack->Print();
 
-        // Last use over all previous runs. We have already read this info from the watchlist.
+        // Execution Profile over all previous runs. We have already read this info from the watchlist.
         // Accessing this now for given malloc stack.
-        BufferedStackTrace* prevlastuse = nullptr;
-        BufferedStackTrace* retmallocstack = nullptr;
+        ExecutionProfile* profile = nullptr;
 
         int pos = addrwatch.IsStackPresent(mallocstack);
 
@@ -449,7 +575,7 @@ namespace __sanitizer {
         addrwatch.SetStackWrittenToWatchlist(pos);
 
         if (pos != -1)
-           prevlastuse = addrwatch.GetLastUseStack(pos);
+           profile = addrwatch.GetExecutionProfile(pos);
            //retmallocstack = addrwatch.GetStack(pos);
 
         //Printf("AddressWatcher malloc stack :\n");
@@ -458,13 +584,29 @@ namespace __sanitizer {
         //Printf("AddressWatcher prevlast use :\n");
         //prevlastuse->Print();
 
-        BufferedStackTrace* mergedlastuse = MergeLastUse(lastusethisrun,prevlastuse);
+        // BufferedStackTrace* mergedlastuse = MergeLastUse(lastusethisrun, prevlastuse);
+        ExecutionProfile* mergedprofile = MergeProfile(tracethisrun, profile);
 
-        if (mergedlastuse)
+        if (mergedprofile && mergedprofile->len > 0)
         {
+        
            Printf("The last read/write to this leaked memory over all runs happened at:\n");
-           (mergedlastuse)->Print();
-           WriteWatchAddr(mergedlastuse);
+           (mergedprofile)->PrintLastUse();
+           
+            if (mergedprofile == nullptr || mergedprofile->exec_profile == nullptr || mergedprofile->len == 0)
+            {
+                WriteUptr(0);
+            }
+            int len = int(mergedprofile->len);
+            ExecutionTrace* exec_profile = mergedprofile->exec_profile;
+            WriteUptr(len);
+           
+            for( int j=0; j<len; j++)
+            {
+                ExecutionTrace* e = &(exec_profile[j]);
+                WriteExecutionTrace(e);
+            }
+            //    WriteExecutionProfile(mergedprofile);
         }
         else
         {
