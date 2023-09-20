@@ -45,10 +45,10 @@ docker run -it addresswatcher
 
 ### Use the compiled binary
 
-Minimized Benchmark files are within /mem_leak/benchmark/ folder. The following command below compiles binutils_leak_1.c
+Minimized Benchmark files are within /mem_leak/benchmarks/ folder. The following command below compiles binutils_leak_1.c
 
 ```bash
-/mem_leak/goodgcc/bin/gcc -fsanitize=address -ggdb /mem_leak/AddressWatcher/benchmark/binutils/leak_1/binutils_leak_1.c
+/mem_leak/goodgcc/bin/gcc -fsanitize=address -ggdb /mem_leak/AddressWatcher/benchmarks/binutils/leak_1/binutils_leak_1.c
 ```
 
-All logs are available after testing within the testing/ directory.
+All AddressWatcher logs are available after testing within the testing/ directory.
