@@ -27,15 +27,28 @@ The benchmarks can be found in benchmarks/ folder which is a collection of 50 me
 To understand more on how to run the tool:
 https://www.youtube.com/watch?v=cGuefW925X4
 
-**Docker image:**
-1. docker pull ashamedbit/addresswatcher:latest
-2. Set these 2 environment variables within the docker
+### Building docker image
 
+First clone this repo, and enter the root directory of the project.
 
-    export ASAN_OPTIONS="log_path=/AddressWatcher/benchmarks/asan:halt_on_error=0:detect_leaks=1:address_watcher=1"
+You can now build the environment required for the tool from using the Dockerfile included by running the following command:
+```bash
+docker build -t addresswatcher . 
+```
 
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/goodgcc/lib64"
+### Launching docker image with tool
 
+The build command will both setup the environment and the 3 test repositories. To enter the container invoke:
+```bash
+docker run -it addresswatcher
+```
 
-3. Use compiled binary in goodgcc directory
+### Use the compiled binary
 
+Minimized Benchmark files are within /mem_leak/benchmark/ folder. The following command below compiles binutils_leak_1.c
+
+```bash
+/mem_leak/goodgcc/bin/gcc -fsanitize=address -ggdb /mem_leak/AddressWatcher/benchmark/binutils/leak_1/binutils_leak_1.c
+```
+
+All logs are available after testing within the testing/ directory.
