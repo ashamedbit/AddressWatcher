@@ -27,6 +27,9 @@ The benchmarks can be found in benchmarks/ folder which is a collection of 50 me
 To understand more on how to run the tool:
 https://www.youtube.com/watch?v=cGuefW925X4
 
+To understand how you can automatically patch the memory leak using AddressWatcher output:
+https://www.youtube.com/watch?v=PIOPzy04eXw
+
 ### Building docker image
 
 First clone this repo, and enter the root directory of the project.
