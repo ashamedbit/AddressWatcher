@@ -23,7 +23,8 @@ To use the new compiled binaries with AddressWatcher mode on a C program test.c 
 The benchmarks can be found in benchmarks/ folder which is a collection of 50 memory leak bugs across openssl, tmux, openssh-portable, binutils and git.
 
 
-**Demo youtube link**
+**Demo YouTube link:**
+
 To understand more on how to run the tool:
 https://www.youtube.com/watch?v=cGuefW925X4
 
@@ -32,7 +33,7 @@ https://www.youtube.com/watch?v=PIOPzy04eXw
 
 ### Building docker image
 
-First clone this repo, and enter the root directory of the project.
+First, clone this repo, and enter the root directory of the project.
 
 You can now build the environment required for the tool from using the Dockerfile included by running the following command:
 ```bash
